@@ -103,7 +103,8 @@ int main (int argc, char** argv)
     ExposureMask | KeyPressMask | // ButtonPress | FIXME: <-- leads to sudden exits
     StructureNotifyMask | ButtonReleaseMask |
     KeyReleaseMask | EnterWindowMask | LeaveWindowMask |
-    PointerMotionMask | Button1MotionMask | VisibilityChangeMask |
+    // PointerMotionMask | FIXME: <-- ignore mouse move
+    Button1MotionMask | VisibilityChangeMask |
     ColormapChangeMask
     );
 
