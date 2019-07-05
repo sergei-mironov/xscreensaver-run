@@ -10,12 +10,13 @@
 
 int usage()
 {
-  fprintf(stderr,"Usage: xscreensaver-run SCREENSAVER_COMMAND\n");
+  fprintf(stderr,"Usage: xscreensaver-run SCREENSAVER ARGS..\n");
 }
 
 /* X11 forces you to create a blank cursor if you want
 to disable the cursor. */
-Cursor blankcursor(Display* dis, Window win) {
+Cursor blankcursor(Display* dis, Window win)
+{
   static char data[1] = {0};
   Cursor cursor;
   Pixmap blank;
@@ -93,11 +94,10 @@ int main (int argc, char** argv)
                      "Error code %d (%m)\n", ret);
       return 2;
     }
+    /* FIXME: handle early exit of the screensaver */
   }
 
-  sleep(1); /* To prevent sudden window close due to event */
-
-  /* FIXME: handle early exit of the screensaver */
+  sleep(1); /* FIXME: A hack to immediate close due to focusing-related events */
 
   XSelectInput(dis, win,
     ExposureMask | KeyPressMask | // ButtonPress | FIXME: <-- leads to sudden exits
