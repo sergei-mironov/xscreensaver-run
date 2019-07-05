@@ -11,13 +11,13 @@ See also <https://unix.stackexchange.com/questions/290698/how-to-manually-start-
 Build
 -----
 
-Just compile and run.
+Just make install
+
+    $ make install
 
 NixOS users may use the following shell env:
 
-    nix-shell -p xlibs.libX11.dev pkgs.strace pkgs.gdb
-
-TODO: Implement install goal in the Makefile
+    $ nix-shell -p xlibs.libX11.dev pkgs.strace pkgs.gdb
 
 
 Usage
