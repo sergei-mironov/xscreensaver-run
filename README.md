@@ -3,8 +3,7 @@ Xscreensaver-run
 
 This tiny program may be used to run screensavers from
 [XScreenSaver](https://www.jwz.org/xscreensaver/) collection synchronously,
-without any effects like screen lock or monitor timers.
-
+in fullscreen and without additional effects like screen locks or timers.
 
 See also <https://unix.stackexchange.com/questions/290698/how-to-manually-start-an-xscreensaver-application-in-root-window-full-screen>
 
