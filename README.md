@@ -18,8 +18,7 @@ NixOS users may use the following shell env:
 
     nix-shell -p xlibs.libX11.dev pkgs.strace pkgs.gdb
 
-
-TODO: Implement install goal
+TODO: Implement install goal in the Makefile
 
 
 Usage
@@ -28,8 +27,12 @@ Usage
 Run any screensaver from Xscreensaver collection by typing `xscreensaver-run
 SCREENSAVER_APP_ARGS`. For example:
 
-    xscreensaver-run /usr/libexec/xscreensaver/apple2
+    $ ./xscreensaver-run /usr/libexec/xscreensaver/apple2 -text -program 'uname -a'
 
 Enjoy!
 
 
+Bugs?
+-----
+
+Check FIXMEs in the source code. Feel free to fix them and share PRs!

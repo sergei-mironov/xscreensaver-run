@@ -97,6 +97,8 @@ int main (int argc, char** argv)
 
   sleep(1); /* To prevent sudden window close due to event */
 
+  /* FIXME: handle early exit of the screensaver */
+
   XSelectInput(dis, win,
     ExposureMask | KeyPressMask | // ButtonPress | FIXME: <-- leads to sudden exits
     StructureNotifyMask | ButtonReleaseMask |
