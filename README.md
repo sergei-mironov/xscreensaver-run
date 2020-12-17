@@ -31,7 +31,24 @@ SCREENSAVER_APP_ARGS`. For example:
 Enjoy!
 
 
+Development notes
+-----------------
+
+### Environment
+
+To test the application in Nix:
+
+1. `$ nix-shell`
+2. `(shell) $ nix-build '<nixpkgs>' -A pkgs.xscreensaver`
+3. `(shell) $ make`
+4. `(shell) $ ./xscreensaver-run ./result/libexec/xscreensaver/apple2 -text`
+
+### References
+
+* [X Event definitions](https://fossies.org/dox/tightvnc-1.3.10_unixsrc/X_8h.html)
+* [X Event documentation](https://tronche.com/gui/x/xlib/events/processing-overview.html)
+
 Bugs?
 -----
 
-Check FIXMEs in the source code. Feel free to fix them and share PRs!
+Yes! Check FIXMEs in the source code. Feel free to fix them and file PRs!

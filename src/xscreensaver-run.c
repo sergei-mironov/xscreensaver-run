@@ -8,9 +8,18 @@
 #include <signal.h>
 #include <sys/prctl.h>
 
+static int g_verbose = 0;
+
+#define verbose_printf(args...) \
+  do { \
+    if(g_verbose) { \
+      fprintf(stderr, args); \
+    } \
+  } while(0)
+
 int usage()
 {
-  fprintf(stderr,"Usage: xscreensaver-run SCREENSAVER ARGS..\n");
+  fprintf(stderr, "Usage: xscreensaver-run [-h] [-v] [-MV] -- SCREENSAVER_CMD ARGS..\n");
 }
 
 /* X11 forces you to create a blank cursor if you want
@@ -33,14 +42,24 @@ Cursor blankcursor(Display* dis, Window win)
 
 int main (int argc, char** argv)
 {
-  if(argc < 2) {
-    usage();
-    return 1;
+  int react_mouse = 0;
+  int react_visibility = 0;
+  int opt;
+  while ((opt = getopt(argc, argv, "hvMV")) != -1) {
+    switch (opt) {
+    case 'h': usage(); exit(EXIT_FAILURE);
+    case 'v': g_verbose = 1; break;
+    case 'M': react_mouse = 1; break;
+    case 'V': react_visibility = 1; break;
+    default:
+        fprintf(stderr, "Usage: %s [-ilw] [file...]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
   }
 
-  if(0==strcmp(argv[1],"-h") || 0==strcmp(argv[1],"--help")) {
+  if(optind >= argc) {
     usage();
-    return 0;
+    exit(EXIT_FAILURE);
   }
 
   Display* dis = XOpenDisplay(NULL);
@@ -70,28 +89,26 @@ int main (int argc, char** argv)
   XFlush(dis);
 
   /* Prepare command line arguments, add -window-id <id> argument */
+  int command_idx = optind;
   char buf[20];
   snprintf(buf, sizeof(buf), "0x%lx", win);
-  int i; char *args[_SC_ARG_MAX];
-  args[0]=argv[1];
-  for(i=2; i<argc; i++) {
-    args[i-1]=argv[i];
-    if(args[i-1]==NULL) {
-      break;
-    }
+  char *args[_SC_ARG_MAX];
+  for(; optind<argc; optind++) {
+    args[optind-command_idx]=argv[optind];
   }
-  args[i-1]="-window-id";
-  args[i-0]=buf;
-  args[i+1]=NULL;
+  args[(optind++)-command_idx]="-window-id";
+  args[(optind++)-command_idx]=buf;
+  args[(optind++)-command_idx]=NULL;
 
   /* Fork an run the screensaver */
   int chld_id=fork();
   if(!chld_id) {
-    prctl(PR_SET_PDEATHSIG, SIGHUP); /* FIXME: linux-only */
-    int ret = execvp(argv[1],args);
+    prctl(PR_SET_PDEATHSIG, SIGHUP); /* FIXME: linux-only. Find a more
+                                        platform-independant solution. */
+    int ret = execvp(args[0],args);
     if (ret!=0) {
-      fprintf(stderr,"Failed to run the command\n"
-                     "Error code %d (%m)\n", ret);
+      verbose_printf("Failed to run the command '%s ...'\n"
+                     "Error code %d (%m)\n", args[0], ret);
       return 2;
     }
     /* FIXME: handle early exit of the screensaver */
@@ -99,22 +116,31 @@ int main (int argc, char** argv)
 
   sleep(1); /* FIXME: A hack to immediate close due to focusing-related events */
 
-  XSelectInput(dis, win,
-    ExposureMask | KeyPressMask | // ButtonPress | FIXME: <-- leads to sudden exits
-    StructureNotifyMask | ButtonReleaseMask |
-    KeyReleaseMask | EnterWindowMask | LeaveWindowMask |
-    // PointerMotionMask | FIXME: <-- ignore mouse move
-    Button1MotionMask | VisibilityChangeMask |
-    ColormapChangeMask
+  XSelectInput(dis, win, 0
+    // | ExposureMask
+    | KeyPressMask
+    // | ButtonPress // FIXME: <-- leads to sudden exits with `BadAccess`
+    // | ButtonRelease
+    | StructureNotifyMask
+    | ButtonReleaseMask
+    | KeyReleaseMask
+    | EnterWindowMask
+    | LeaveWindowMask
+    | (react_mouse ? PointerMotionMask : 0)
+    | Button1MotionMask
+    | (react_visibility ? VisibilityChangeMask : 0) // E.g. monitor on/off
+    | ColormapChangeMask
     );
 
   /* Wait for any of keyboard,mouse,etc. Exit immediately. */
+  XEvent event;
   while (1) {
-    XEvent event;
+    memset(&event, 0, sizeof(event));
     XNextEvent(dis, &event);
     break;
   }
 
+  verbose_printf("Exiting due to X event type %d\n", event.type);
   return 0;
 }
 
