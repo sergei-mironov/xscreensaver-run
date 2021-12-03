@@ -15,10 +15,12 @@ Just make install
 
     $ make install
 
-NixOS users may use the following shell env:
 
-    $ nix-shell -p xlibs.libX11.dev pkgs.strace pkgs.gdb
+NixOS users may use the following commands to install the application in the
+current user's profile:
 
+    $ nix-build
+    $ nix-env -i ./result
 
 Usage
 -----
@@ -43,12 +45,19 @@ To test the application in Nix:
 3. `(shell) $ make`
 4. `(shell) $ ./xscreensaver-run ./result/libexec/xscreensaver/apple2 -text`
 
+### Hints
+
+* To reset root window's cursor (just in case): `xsetroot -cursor_name left_ptr`
+
 ### References
 
 * [X Event definitions](https://fossies.org/dox/tightvnc-1.3.10_unixsrc/X_8h.html)
 * [X Event documentation](https://tronche.com/gui/x/xlib/events/processing-overview.html)
+* https://linux.die.net/man/3/xwindowevent
+* https://linux.die.net/man/3/xgrabkeyboard
 
 Bugs?
 -----
 
 Yes! Check FIXMEs in the source code. Feel free to fix them and file PRs!
+
