@@ -115,6 +115,8 @@ int main (int argc, char** argv)
 
   Window root_win;
 
+  // sleep(1); /* FIXME: A hack to immediate close due to focusing-related events */
+
   {
   int screen_num;
   Screen *screen;
@@ -122,9 +124,11 @@ int main (int argc, char** argv)
   screen = XScreenOfDisplay(dis, screen_num);
   root_win = RootWindow(dis, XScreenNumberOfScreen(screen));
   int ret;
-  ret = XGrabPointer(dis, root_win, False,
-                ButtonReleaseMask | ButtonPressMask|Button1MotionMask, GrabModeSync,
-                GrabModeAsync, root_win, blankcursor(dis,root_win), CurrentTime);
+  root_win=win;
+  ret = XGrabPointer(dis, root_win, True,
+                ButtonReleaseMask | ButtonPressMask|Button1MotionMask,
+                GrabModeAsync, GrabModeAsync,
+                root_win, blankcursor(dis,root_win), CurrentTime);
   if(ret != GrabSuccess) {
     verbose_printf("Unable to grab root window mouse pointer: %d\n", ret);
     return 3;
@@ -139,7 +143,6 @@ int main (int argc, char** argv)
   }
   }
 
-  sleep(1); /* FIXME: A hack to immediate close due to focusing-related events */
 
   /* Remove all the events from the queue. */
   XEvent event;
