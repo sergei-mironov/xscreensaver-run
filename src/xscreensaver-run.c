@@ -1,5 +1,6 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
+#include <X11/cursorfont.h>
 #include <strings.h>
 #include <memory.h>
 #include <stdlib.h>
@@ -17,9 +18,9 @@ static int g_verbose = 0;
     } \
   } while(0)
 
-int usage()
+void usage()
 {
-  fprintf(stderr, "Usage: xscreensaver-run [-h] [-v] [-MV] -- SCREENSAVER_CMD ARGS..\n");
+  fprintf(stderr, "Usage: xscreensaver-run [-h] [-v] -- SCREENSAVER_CMD ARGS..\n");
 }
 
 /* X11 forces you to create a blank cursor if you want
@@ -45,14 +46,14 @@ int main (int argc, char** argv)
   int react_mouse = 0;
   int react_visibility = 0;
   int opt;
-  while ((opt = getopt(argc, argv, "hvMV")) != -1) {
+  while ((opt = getopt(argc, argv, "hv")) != -1) {
     switch (opt) {
     case 'h': usage(); exit(EXIT_FAILURE);
     case 'v': g_verbose = 1; break;
-    case 'M': react_mouse = 1; break;
-    case 'V': react_visibility = 1; break;
+    // case 'M': react_mouse = 1; break;
+    // case 'V': react_visibility = 1; break;
     default:
-        fprintf(stderr, "Usage: %s [-ilw] [file...]\n", argv[0]);
+        usage();
         exit(EXIT_FAILURE);
     }
   }
@@ -84,8 +85,6 @@ int main (int argc, char** argv)
   XSendEvent(dis, DefaultRootWindow(dis), False,
     SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 
-  XDefineCursor(dis, win, blankcursor(dis,win));
-
   XFlush(dis);
 
   /* Prepare command line arguments, add -window-id <id> argument */
@@ -114,29 +113,47 @@ int main (int argc, char** argv)
     /* FIXME: handle early exit of the screensaver */
   }
 
+  Window root_win;
+
+  {
+  int screen_num;
+  Screen *screen;
+  screen_num = DefaultScreen(dis);
+  screen = XScreenOfDisplay(dis, screen_num);
+  root_win = RootWindow(dis, XScreenNumberOfScreen(screen));
+  int ret;
+  ret = XGrabPointer(dis, root_win, False,
+                ButtonReleaseMask | ButtonPressMask|Button1MotionMask, GrabModeSync,
+                GrabModeAsync, root_win, blankcursor(dis,root_win), CurrentTime);
+  if(ret != GrabSuccess) {
+    verbose_printf("Unable to grab root window mouse pointer: %d\n", ret);
+    return 3;
+  }
+  ret = XGrabKeyboard(dis,
+           root_win,
+           KeyPressMask,
+           GrabModeAsync, GrabModeAsync, CurrentTime);
+  if(ret != GrabSuccess) {
+    verbose_printf("Unable grab root window keyboard: %d\n", ret);
+    return 4;
+  }
+  }
+
   sleep(1); /* FIXME: A hack to immediate close due to focusing-related events */
 
-  XSelectInput(dis, win, 0
-    // | ExposureMask
-    | KeyPressMask
-    // | ButtonPress // FIXME: <-- leads to sudden exits with `BadAccess`
-    // | ButtonRelease
-    | StructureNotifyMask
-    | ButtonReleaseMask
-    | KeyReleaseMask
-    | EnterWindowMask
-    | LeaveWindowMask
-    | (react_mouse ? PointerMotionMask : 0)
-    | Button1MotionMask
-    | (react_visibility ? VisibilityChangeMask : 0) // E.g. monitor on/off
-    | ColormapChangeMask
-    );
-
-  /* Wait for any of keyboard,mouse,etc. Exit immediately. */
+  /* Remove all the events from the queue. */
   XEvent event;
+  while(True == XWindowEvent(dis, root_win,
+      ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask,
+      &event));
+
+  /* Wait for new keyboard,mouse,etc. Exit immediately. */
   while (1) {
     memset(&event, 0, sizeof(event));
-    XNextEvent(dis, &event);
+    XAllowEvents(dis, SyncPointer, CurrentTime);
+    XWindowEvent(dis, root_win,
+      ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask,
+      &event);
     break;
   }
 
