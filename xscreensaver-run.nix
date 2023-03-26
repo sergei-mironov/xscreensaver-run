@@ -1,4 +1,4 @@
-{ stdenv, fetchgit, libX11, xscreensaver, makeWrapper}:
+{ lib, stdenv, fetchgit, libX11, xscreensaver, makeWrapper}:
 
 stdenv.mkDerivation rec {
   name = "xscreensaver-run-${version}";
@@ -19,7 +19,7 @@ stdenv.mkDerivation rec {
       --prefix PATH : "${xscreensaver}/libexec/xscreensaver"
     '';
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     description = "Run screensaver from XScreenSaver collection synchronousely";
     homepage = https://github.com/grwlf/xscreensaver-run;
     license = licenses.mit;

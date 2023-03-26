@@ -1,9 +1,12 @@
 { pkgs ? import <nixpkgs> {} } :
 
 (import ./xscreensaver-run.nix {
-  libX11 = pkgs.xlibs.libX11;
-  inherit (pkgs) stdenv fetchgit xscreensaver makeWrapper;
+  libX11 = pkgs.xorg.libX11;
+  inherit (pkgs) lib stdenv fetchgit xscreensaver makeWrapper;
 }).overrideAttrs(old : {
   src = ./.;
-  buildInputs = (old.buildInputs ++ [ pkgs.ccls ]);
+  buildInputs = (old.buildInputs ++ [ pkgs.ccls pkgs.xscreensaver ]);
+  shellHook = ''
+    export PATH="${pkgs.xscreensaver}/libexec/xscreensaver:$PATH"
+  '';
 })

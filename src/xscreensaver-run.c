@@ -33,8 +33,10 @@ Cursor blankcursor(Display* dis, Window win)
   XColor dummy;
 
   blank = XCreateBitmapFromData(dis, win, data, 1, 1);
-  if (blank == None)
+  if (blank == None) {
+    verbose_printf("Failed to create a blank cursor for %ld\n", win);
     return 0;
+  }
   cursor = XCreatePixmapCursor(dis, blank, blank, &dummy, &dummy, 0, 0);
   XFreePixmap(dis, blank);
 
@@ -85,6 +87,8 @@ int main (int argc, char** argv)
   XSendEvent(dis, DefaultRootWindow(dis), False,
     SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 
+  Cursor bc = blankcursor(dis,win);
+  XDefineCursor(dis, win, bc);
   XFlush(dis);
 
   /* Prepare command line arguments, add -window-id <id> argument */
@@ -105,44 +109,41 @@ int main (int argc, char** argv)
     prctl(PR_SET_PDEATHSIG, SIGHUP); /* FIXME: linux-only. Find a more
                                         platform-independant solution. */
     int ret = execvp(args[0],args);
-    if (ret!=0) {
-      verbose_printf("Failed to run the command '%s ...'\n"
-                     "Error code %d (%m)\n", args[0], ret);
-      return 2;
-    }
-    /* FIXME: handle early exit of the screensaver */
+    verbose_printf("Failed to run the command '%s ...'\n"
+                   "Error code %d (%m)\n", args[0], ret);
+    return 2;
   }
 
   Window root_win;
-
-  // sleep(1); /* FIXME: A hack to immediate close due to focusing-related events */
-
-  {
-  int screen_num;
-  Screen *screen;
-  screen_num = DefaultScreen(dis);
-  screen = XScreenOfDisplay(dis, screen_num);
-  root_win = RootWindow(dis, XScreenNumberOfScreen(screen));
-  int ret;
   root_win=win;
-  ret = XGrabPointer(dis, root_win, True,
-                ButtonReleaseMask | ButtonPressMask|Button1MotionMask,
-                GrabModeAsync, GrabModeAsync,
-                root_win, blankcursor(dis,root_win), CurrentTime);
-  if(ret != GrabSuccess) {
-    verbose_printf("Unable to grab root window mouse pointer: %d\n", ret);
-    return 3;
-  }
-  ret = XGrabKeyboard(dis,
-           root_win,
-           KeyPressMask,
-           GrabModeAsync, GrabModeAsync, CurrentTime);
-  if(ret != GrabSuccess) {
-    verbose_printf("Unable grab root window keyboard: %d\n", ret);
-    return 4;
-  }
+  int ret;
+  while(1) {
+    int screen_num;
+    Screen *screen;
+    screen_num = DefaultScreen(dis);
+    screen = XScreenOfDisplay(dis, screen_num);
+    ret = XGrabPointer(dis, root_win, True,
+                  ButtonReleaseMask | ButtonPressMask | Button1MotionMask,
+                  GrabModeAsync, GrabModeAsync,
+                  root_win, bc, CurrentTime);
+    if(ret == GrabSuccess) {
+      break;
+    }
+    verbose_printf("Unable to grab window mouse: %d, will retry\n", ret);
+    // sleep(1);
   }
 
+  while(1) {
+    ret = XGrabKeyboard(dis,
+             root_win,
+             KeyPressMask,
+             GrabModeAsync, GrabModeAsync, CurrentTime);
+    if(ret == GrabSuccess) {
+      break;
+    }
+    verbose_printf("Unable grab window keyboard: %d, will retry\n", ret);
+    // sleep(1);
+  }
 
   /* Remove all the events from the queue. */
   XEvent event;
